@@ -331,6 +331,14 @@ export const PresentationEditorPage: React.FC = () => {
 
           {/* Action Tabs & Buttons */}
           <div className="flex items-center gap-2">
+            {!isEditMode && (
+              <Link
+                to="/presentations/generate"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-300"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Générer avec l'IA
+              </Link>
+            )}
             <div className="flex rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800">
               <button
                 type="button"

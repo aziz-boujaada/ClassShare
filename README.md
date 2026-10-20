@@ -99,6 +99,31 @@ Le build de production échoue volontairement si l'URL Supabase ou la clé publi
 
 ---
 
+## Générateur de présentations IA
+
+La page protégée `/presentations/generate` accepte des notes, un PDF (30 Mo et 80 pages par défaut) ou un lien public Google Slides. L'export Slides est demandé uniquement à `docs.google.com` via son URL d'export PDF fixe; les redirections sont refusées. Canva ne fournit pas automatiquement l'accès aux contenus d'un lien de partage : exportez-le en PDF et importez le fichier.
+
+La génération s'exécute dans `supabase/functions/generate-presentation` via l'API Groq, avec une clé conservée côté serveur et des réponses JSON validées par la fonction avant utilisation. Les PDF sont extraits page par page en mémoire avec le build serverless de `unpdf`, sans stockage durable ni OCR. Les contenus scannés sans texte extractible sont refusés avec une explication. Les présentations produites utilisent les blocs existants et sont enregistrées en brouillon; elles doivent être relues et publiées explicitement par l'étudiant.
+
+Pour déployer cette fonctionnalité :
+
+1. Appliquez les migrations avec `npx supabase db push` (la migration de quota limite un utilisateur à 10 demandes par 24 heures).
+2. Définissez les secrets Edge Function :
+   ```bash
+   npx supabase secrets set GROQ_API_KEY='votre-cle-groq'
+   npx supabase secrets set GROQ_MODEL='openai/gpt-oss-20b'
+   npx supabase secrets set MAX_PDF_SIZE_MB=30
+   ```
+3. Déployez la fonction :
+   ```bash
+   npx supabase functions deploy generate-presentation
+   ```
+4. Définissez les variables optionnelles côté Edge Function, si nécessaire : `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_GENERATION_TOKENS`, `AI_GENERATION_TIMEOUT_MS` et `APP_ORIGIN`. Les valeurs par défaut sont documentées dans `.env.example`. Les valeurs `VITE_*` ne sont jamais utilisées pour les secrets IA.
+
+La fonction vérifie le JWT Supabase, utilise un quota atomique par utilisateur, borne les tailles et durées, valide la signature PDF, et valide/normalise la sortie avant de l'enregistrer. Pour les erreurs de format, elle peut afficher le message du fournisseur après suppression de la clé et troncature; le contenu du document et le prompt ne sont pas journalisés.
+
+---
+
 ## 🧪 Scénarios Validés
 
 1. Inscription, connexion et session persistante.

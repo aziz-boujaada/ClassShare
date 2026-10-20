@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 export const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const supabaseAnonKey = (
+export const supabasePublishableKey = (
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 ).trim();
 
@@ -13,11 +13,11 @@ try {
   validUrl = false;
 }
 export const isSupabaseConfigured = validUrl && Boolean(
-  supabaseAnonKey && !supabaseAnonKey.includes('your-anon-public-api-key') && !supabaseAnonKey.includes('<'),
+  supabasePublishableKey && !supabasePublishableKey.includes('your-anon-public-api-key') && !supabasePublishableKey.includes('<'),
 );
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+  ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

@@ -14,6 +14,7 @@ import { DashboardPage } from './pages/DashboardPage.tsx';
 import { PresentationsFeedPage } from './pages/PresentationsFeedPage.tsx';
 import { PresentationDetailsPage } from './pages/PresentationDetailsPage.tsx';
 import { PresentationEditorPage } from './pages/PresentationEditorPage.tsx';
+import { AiGenerationPage } from './pages/AiGenerationPage.tsx';
 import { LeaderboardPage } from './pages/LeaderboardPage.tsx';
 import { ProfilePage } from './pages/ProfilePage.tsx';
 import { EditProfilePage } from './pages/EditProfilePage.tsx';
@@ -74,6 +75,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/presentations/generate"
+                  element={
+                    <ProtectedRoute>
+                      <AiGenerationPage />
                     </ProtectedRoute>
                   }
                 />

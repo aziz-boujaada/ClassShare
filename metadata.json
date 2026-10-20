@@ -2,5 +2,5 @@
   "name": "ClassShare",
   "description": "Plateforme universitaire de partage de connaissances et présentations étudiantes avec blocs interactifs, snippets de code, résumés pédagogiques et classement.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GROQ_API"]
 }

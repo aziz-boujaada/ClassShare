@@ -1,4 +1,7 @@
 project_id = "aciksypdbmscnvrdkvyr"
 
+[functions.generate-presentation]
+verify_jwt = true
+
 [db.seed]
 enabled = false

@@ -81,7 +81,14 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to="/presentations/generate"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-bold text-white shadow-md backdrop-blur hover:bg-white/20 transition-all"
+              >
+                <Sparkles className="h-5 w-5 text-amber-300" />
+                <span>Générer avec l'IA</span>
+              </Link>
               <Link
                 to="/presentations/new"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-indigo-700 shadow-md hover:bg-indigo-50 transition-all hover:scale-105"
