@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { User, ArrowLeft, Save, Sparkles, Check, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, ArrowLeft, Save, Check, RefreshCw, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { api } from '../services/api.ts';
 
 export const EditProfilePage: React.FC = () => {
   const { user, updateProfile } = useAuth();
-  const navigate = useNavigate();
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [studyProgram, setStudyProgram] = useState(user?.study_program || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -23,9 +25,37 @@ export const EditProfilePage: React.FC = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(null);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [avatarFile]);
+
   const handleGenerateAvatar = () => {
     const seed = Math.random().toString(36).substring(7);
+    setAvatarFile(null);
     setAvatarUrl(`https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`);
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Choisissez une image JPG, PNG ou WebP.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('L’image doit faire 5 Mo maximum.');
+      e.target.value = '';
+      return;
+    }
+    setAvatarFile(file);
+    e.target.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,12 +67,15 @@ export const EditProfilePage: React.FC = () => {
 
     setSaving(true);
     try {
+      const savedAvatarUrl = avatarFile ? await api.uploadAvatar(avatarFile) : avatarUrl.trim() || null;
       await updateProfile({
         full_name: fullName.trim(),
         bio: bio.trim(),
         study_program: studyProgram.trim(),
-        avatar_url: avatarUrl.trim() || null,
+        avatar_url: savedAvatarUrl,
       });
+      setAvatarFile(null);
+      setAvatarUrl(savedAvatarUrl || '');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
@@ -78,17 +111,27 @@ export const EditProfilePage: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Avatar preview & change */}
+            {/* Profile photo preview and upload */}
             <div className="flex items-center gap-5">
               <img
                 src={
-                  avatarUrl ||
+                  avatarPreview || avatarUrl ||
                   `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.username || 'user'}`
                 }
-                alt=""
+                alt="Aperçu de la photo de profil"
                 className="h-20 w-20 rounded-full object-cover border-2 border-indigo-200 dark:border-indigo-800"
               />
-              <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-indigo-700">
+                  <Upload className="h-3.5 w-3.5" />
+                  Choisir une photo
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleAvatarFileChange}
+                    className="sr-only"
+                  />
+                </label>
                 <button
                   type="button"
                   onClick={handleGenerateAvatar}
@@ -97,8 +140,9 @@ export const EditProfilePage: React.FC = () => {
                   <RefreshCw className="h-3.5 w-3.5" />
                   Générer un nouvel avatar
                 </button>
-                <span className="text-[11px] text-slate-400 block">
-                  Ou collez une URL personnalisée ci-dessous.
+                <span className="w-full text-[11px] text-slate-400">
+                  JPG, PNG ou WebP · 5 Mo maximum
+                  {avatarFile && <span className="block text-indigo-600 dark:text-indigo-400">{avatarFile.name}</span>}
                 </span>
               </div>
             </div>
@@ -111,7 +155,10 @@ export const EditProfilePage: React.FC = () => {
               <input
                 type="url"
                 value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
+                onChange={(e) => {
+                  setAvatarFile(null);
+                  setAvatarUrl(e.target.value);
+                }}
                 placeholder="https://..."
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               />

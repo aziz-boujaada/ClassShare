@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Share2,
   Check,
+  Trophy,
   
 } from 'lucide-react';
 import { api } from '../services/api.ts';
@@ -86,6 +87,7 @@ export const ProfilePage: React.FC = () => {
   const isOwnProfile = currentUser?.id === profile.id;
   const totalLikes = presentations.reduce((acc, p) => acc + (p.likes_count || 0), 0);
   const totalComments = presentations.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+  const userPoints = presentations.length * 50 + totalLikes * 10 + totalComments * 5;
 
   const formattedDate = new Date(profile.created_at).toLocaleDateString('fr-FR', {
     month: 'long',
@@ -166,7 +168,7 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           {/* Aggregate Student Stats */}
-          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-4 text-center">
+          <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
               <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white block">
                 {presentations.length}
@@ -186,6 +188,14 @@ export const ProfilePage: React.FC = () => {
                 {totalComments}
               </span>
               <span className="text-[11px] font-semibold text-slate-500">Commentaires</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40">
+              <span className="inline-flex items-center justify-center gap-1 text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">
+                <Trophy className="h-4 w-4" />
+                {userPoints}
+              </span>
+              <span className="text-[11px] font-semibold text-slate-500 block">Points</span>
             </div>
           </div>
         </div>

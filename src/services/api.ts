@@ -96,6 +96,34 @@ export const api = {
     return data as Profile;
   },
 
+  async uploadAvatar(file: File): Promise<string> {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Choisissez une image JPG, PNG ou WebP.');
+    }
+    if (file.size > maxSizeBytes) {
+      throw new Error('L’image doit faire 5 Mo maximum.');
+    }
+
+    const userId = await currentUserId();
+    const extensionByType: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+    };
+    const path = `${userId}/${crypto.randomUUID()}.${extensionByType[file.type]}`;
+    const client = requireSupabase();
+    const { error } = await client.storage.from('avatars').upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type,
+      upsert: false,
+    });
+    if (error) throw error;
+
+    return client.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+  },
+
   async getAllProfiles(): Promise<Profile[]> {
     const { data, error } = await requireSupabase().from('profiles').select('*').order('full_name');
     if (error) throw error;
@@ -274,7 +302,14 @@ export const api = {
   async getLeaderboard(_timeframe: 'all' | 'month' | 'week' = 'all'): Promise<LeaderboardEntry[]> {
     const { data, error } = await requireSupabase().from('leaderboard_view').select('*');
     if (error) throw error;
-    return (data || []).map((entry: any, index: number) => ({ ...entry, rank: index + 1 })) as LeaderboardEntry[];
+    return (data || []).map((entry: any, index: number) => ({
+      ...entry,
+      score:
+        Number(entry.published_presentations_count || 0) * 50 +
+        Number(entry.total_likes_received || 0) * 10 +
+        Number(entry.total_comments_received || 0) * 5,
+      rank: index + 1,
+    })) as LeaderboardEntry[];
   },
 
   async getNotifications(): Promise<Notification[]> {

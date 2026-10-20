@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Database, ShieldCheck, Heart, Github } from 'lucide-react';
+import { GraduationCap, BookOpen, Users, Heart } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -80,22 +80,22 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Architecture & Security */}
+          {/* Community benefits */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-3">
-              Infrastructure
+              Apprendre ensemble
             </h4>
             <div className="space-y-2 text-xs text-slate-500">
               <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-emerald-500" />
-                <span>Supabase PostgreSQL + RLS</span>
+                <BookOpen className="h-4 w-4 text-indigo-500" />
+                <span>Retrouvez des présentations par thème</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-indigo-500" />
-                <span>Triggers & Fonctions de Sécurité</span>
+                <Users className="h-4 w-4 text-violet-500" />
+                <span>Partagez vos connaissances entre étudiants</span>
               </div>
               <p className="text-[11px] pt-2 text-slate-400">
-                Conçu avec React 19, TypeScript strict, TanStack Query et Tailwind CSS.
+                Des ressources académiques réunies au même endroit.
               </p>
             </div>
           </div>

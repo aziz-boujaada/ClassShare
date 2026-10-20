@@ -11,6 +11,7 @@ import {
   Layers,
   ArrowRight,
   UserCheck,
+  Trophy,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { api } from '../services/api.ts';
@@ -61,6 +62,7 @@ export const DashboardPage: React.FC = () => {
   // Compute student stats
   const totalLikesReceived = myPresentations.reduce((acc, p) => acc + (p.likes_count || 0), 0);
   const totalCommentsReceived = myPresentations.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+  const userPoints = myPresentations.length * 50 + totalLikesReceived * 10 + totalCommentsReceived * 5;
 
   return (
     <div className="min-h-screen bg-slate-50/50 py-10 dark:bg-slate-950">
@@ -101,7 +103,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
               <BookOpen className="h-6 w-6" />
@@ -140,6 +142,20 @@ export const DashboardPage: React.FC = () => {
               </span>
               <span className="text-2xl font-black text-slate-900 dark:text-white">
                 {totalCommentsReceived}
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+              <Trophy className="h-6 w-6" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                Points
+              </span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white">
+                {userPoints}
               </span>
             </div>
           </div>
