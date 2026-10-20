@@ -1,0 +1,4 @@
+project_id = "aciksypdbmscnvrdkvyr"
+
+[db.seed]
+enabled = false
