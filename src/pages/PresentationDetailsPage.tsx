@@ -14,13 +14,15 @@ import {
   Send,
   User,
   ShieldAlert,
+  Code2,
 } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { useAuth } from '../context/AuthContext.tsx';
-import type { Presentation, Comment } from '../types/index.ts';
+import type { Presentation, Comment, CodingChallenge } from '../types/index.ts';
 import { estimateReadingTime } from '../lib/logic.ts';
 import { ContentBlockRenderer } from '../components/ui/ContentBlockRenderer.tsx';
 import { LikeButton } from '../components/ui/LikeButton.tsx';
+import { ChallengeParticipants } from '../components/ui/ChallengeParticipants.tsx';
 import { PresentationCard } from '../components/ui/PresentationCard.tsx';
 
 export const PresentationDetailsPage: React.FC = () => {
@@ -31,6 +33,7 @@ export const PresentationDetailsPage: React.FC = () => {
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [related, setRelated] = useState<Presentation[]>([]);
+  const [codingChallenges, setCodingChallenges] = useState<CodingChallenge[]>([]);
   const [commentInput, setCommentInput] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -54,6 +57,9 @@ export const PresentationDetailsPage: React.FC = () => {
           // Load related presentations
           const rel = await api.getPresentations({ subject: p.subject });
           setRelated(rel.filter((r) => r.id !== p.id).slice(0, 3));
+
+          const challenges = await api.getCodingChallengesForPresentation(p.id).catch(() => []);
+          setCodingChallenges(challenges);
         }
       } catch (e) {
         console.error('Error fetching presentation details:', e);
@@ -328,6 +334,18 @@ export const PresentationDetailsPage: React.FC = () => {
         </div>
 
         {/* Two-column layout: Sticky Table of Contents on left + Content Blocks on right */}
+        {codingChallenges.length > 0 && (
+          <section className="mb-8 rounded-3xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 p-5 dark:border-indigo-900/70 dark:from-indigo-950/40 dark:to-violet-950/30 sm:p-6">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white"><Code2 className="h-5 w-5" /></span>
+                <div><p className="text-xs font-bold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">Mise en pratique</p><h2 className="mt-1 text-lg font-black text-slate-900 dark:text-white">Défi lié à cette présentation</h2><p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Mettez en pratique les concepts de « {codingChallenges[0].linked_section} » et gagnez 75 points.</p><div className="mt-3"><ChallengeParticipants participants={codingChallenges[0].participants} /></div></div>
+              </div>
+              <Link to={`/challenges/${codingChallenges[0].id}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700">Ouvrir le défi <Code2 className="h-4 w-4" /></Link>
+            </div>
+          </section>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar TOC */}
           {tocItems.length > 0 && (

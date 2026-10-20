@@ -7,10 +7,35 @@ import type {
   Comment,
   Notification,
   LeaderboardEntry,
+  CodingChallenge,
+  CommunityConversation,
+  CommunityMessage,
   FilterOptions,
 } from '../types/index.ts';
 
 type NewBlock = Omit<PresentationBlock, 'id' | 'presentation_id'>;
+
+async function attachCodingChallengeParticipants(challenges: CodingChallenge[]): Promise<CodingChallenge[]> {
+  if (!challenges.length) return challenges;
+  const { data, error } = await requireSupabase()
+    .from('coding_challenge_participants')
+    .select('challenge_id,participant:profiles!coding_challenge_participants_user_id_fkey(id,username,full_name,avatar_url)')
+    .in('challenge_id', challenges.map((challenge) => challenge.id));
+  if (error) throw error;
+
+  const participantsByChallenge = new Map<string, NonNullable<CodingChallenge['participants']>>();
+  for (const row of data || []) {
+    const participant = (row as any).participant;
+    if (!participant) continue;
+    const participants = participantsByChallenge.get((row as any).challenge_id) || [];
+    participants.push(participant);
+    participantsByChallenge.set((row as any).challenge_id, participants);
+  }
+  return challenges.map((challenge) => ({
+    ...challenge,
+    participants: participantsByChallenge.get(challenge.id) || [],
+  }));
+}
 
 function createSlugSuffix(): string {
   const bytes = new Uint8Array(4);
@@ -159,6 +184,18 @@ export const api = {
     return rows;
   },
 
+  async getPresentationsForChallenge(): Promise<Array<Pick<Presentation, 'id' | 'title' | 'subject' | 'status' | 'updated_at'> & { author: Pick<Profile, 'full_name' | 'username'> | null; blocks: Array<Pick<PresentationBlock, 'title' | 'position'>> }>> {
+    const { data, error } = await requireSupabase()
+      .from('presentations')
+      .select('id,title,subject,status,updated_at,author:profiles!author_id(full_name,username),blocks:presentation_blocks(title,position)')
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map((row: any) => ({
+      ...row,
+      blocks: (row.blocks || []).sort((a: any, b: any) => a.position - b.position),
+    }));
+  },
+
   async getPresentationBySlug(slug: string): Promise<Presentation | null> {
     const client = requireSupabase();
     const { data: { user } } = await client.auth.getUser();
@@ -187,9 +224,164 @@ export const api = {
     return row as Presentation | null;
   },
 
+  async getCodingChallenge(id: string): Promise<CodingChallenge | null> {
+    const { data, error } = await requireSupabase()
+      .from('coding_challenges')
+      .select('id,author_id,presentation_id,public_content,created_at')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    const presentation = data.presentation_id
+      ? await requireSupabase().from('presentations').select('slug').eq('id', data.presentation_id).maybeSingle()
+      : { data: null, error: null };
+    if (presentation.error) throw presentation.error;
+    return { ...data.public_content, id: data.id, author_id: data.author_id, presentation_id: data.presentation_id, presentation_slug: presentation.data?.slug ?? null, created_at: data.created_at } as CodingChallenge;
+  },
+
+  async getCodingChallengesForPresentation(presentationId: string): Promise<CodingChallenge[]> {
+    const { data, error } = await requireSupabase()
+      .from('coding_challenges')
+      .select('id,author_id,presentation_id,public_content,created_at')
+      .eq('presentation_id', presentationId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    const challenges = (data || []).map((row: any) => ({
+      ...row.public_content,
+      id: row.id,
+      author_id: row.author_id,
+      presentation_id: row.presentation_id,
+      created_at: row.created_at,
+    })) as CodingChallenge[];
+    return attachCodingChallengeParticipants(challenges);
+  },
+
+  async getCodingChallenges(): Promise<CodingChallenge[]> {
+    const { data, error } = await requireSupabase()
+      .from('coding_challenges')
+      .select('id,author_id,presentation_id,public_content,created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const challenges = (data || []).map((row: any) => ({
+      ...row.public_content,
+      id: row.id,
+      author_id: row.author_id,
+      presentation_id: row.presentation_id,
+      created_at: row.created_at,
+    })) as CodingChallenge[];
+    return attachCodingChallengeParticipants(challenges);
+  },
+
+  async enrollInCodingChallenge(challengeId: string): Promise<void> {
+    const { error } = await requireSupabase().rpc('enroll_in_coding_challenge', {
+      p_challenge_id: challengeId,
+    });
+    if (error) throw error;
+  },
+
+  async getCommunityConversations(): Promise<CommunityConversation[]> {
+    const userId = await currentUserId();
+    const { data, error } = await requireSupabase()
+      .from('community_messages')
+      .select('id,sender_id,recipient_id,content,created_at,read_at,sender:profiles!community_messages_sender_id_fkey(id,username,full_name,avatar_url),recipient:profiles!community_messages_recipient_id_fkey(id,username,full_name,avatar_url)')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+
+    const conversations = new Map<string, CommunityConversation>();
+    for (const row of (data || []) as any[]) {
+      const isSent = row.sender_id === userId;
+      const peer = (isSent ? row.recipient : row.sender) as CommunityConversation['profile'] | null;
+      if (!peer || conversations.has(peer.id)) {
+        if (!isSent && peer && conversations.has(peer.id) && !row.read_at) conversations.get(peer.id)!.unread_count++;
+        continue;
+      }
+      conversations.set(peer.id, {
+        profile: peer,
+        last_message: row.content,
+        last_message_at: row.created_at,
+        unread_count: !isSent && !row.read_at ? 1 : 0,
+      });
+    }
+    return Array.from(conversations.values());
+  },
+
+  async getCommunityMessages(otherUserId: string): Promise<CommunityMessage[]> {
+    const userId = await currentUserId();
+    const { data, error } = await requireSupabase()
+      .from('community_messages')
+      .select('id,sender_id,recipient_id,content,created_at,read_at')
+      .or(`and(sender_id.eq.${userId},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${userId})`)
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (error) throw error;
+    return (data || []) as CommunityMessage[];
+  },
+
+  async sendCommunityMessage(recipientId: string, content: string): Promise<CommunityMessage> {
+    const userId = await currentUserId();
+    const message = content.trim();
+    if (!message || message.length > 5_000) throw new Error('Le message doit contenir entre 1 et 5 000 caractères.');
+    if (recipientId === userId) throw new Error('Vous ne pouvez pas vous envoyer un message.');
+    const { data, error } = await requireSupabase()
+      .from('community_messages')
+      .insert({ sender_id: userId, recipient_id: recipientId, content: message })
+      .select('id,sender_id,recipient_id,content,created_at,read_at')
+      .single();
+    if (error) throw error;
+    return data as CommunityMessage;
+  },
+
+  async markCommunityMessagesRead(senderId: string): Promise<void> {
+    const userId = await currentUserId();
+    const { error } = await requireSupabase()
+      .from('community_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('sender_id', senderId)
+      .eq('recipient_id', userId)
+      .is('read_at', null);
+    if (error) throw error;
+  },
+
+  async getCommunityUnreadMessageCount(): Promise<number> {
+    const userId = await currentUserId();
+    const { count, error } = await requireSupabase()
+      .from('community_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('recipient_id', userId)
+      .is('read_at', null);
+    if (error) throw error;
+    return count || 0;
+  },
+
+  async getCodingDraft(challengeId: string): Promise<string | null> {
+    const userId = await currentUserId();
+    const { data, error } = await requireSupabase()
+      .from('coding_challenge_drafts')
+      .select('source_code')
+      .eq('challenge_id', challengeId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.source_code ?? null;
+  },
+
+  async saveCodingDraft(challengeId: string, sourceCode: string): Promise<void> {
+    const userId = await currentUserId();
+    const { error } = await requireSupabase().from('coding_challenge_drafts').upsert({
+      challenge_id: challengeId,
+      user_id: userId,
+      source_code: sourceCode.slice(0, 32_768),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'challenge_id,user_id' });
+    if (error) throw error;
+  },
+
   async createPresentation(
     data: Omit<Presentation, 'id' | 'created_at' | 'updated_at' | 'published_at' | 'slug'>,
     blocks: NewBlock[],
+    challengeId?: string,
   ): Promise<Presentation> {
     const client = requireSupabase();
     const authorId = await currentUserId();
@@ -214,6 +406,12 @@ export const api = {
         blocks.map((block, position) => ({ ...block, presentation_id: presentation.id, position })),
       );
       if (blocksError) throw blocksError;
+    }
+    if (challengeId) {
+      const { error: challengeError } = await client.from('coding_challenges')
+        .update({ presentation_id: presentation.id })
+        .eq('id', challengeId);
+      if (challengeError) throw challengeError;
     }
     return (await this.getPresentationById(presentation.id)) as Presentation;
   },
@@ -302,14 +500,16 @@ export const api = {
   async getLeaderboard(_timeframe: 'all' | 'month' | 'week' = 'all'): Promise<LeaderboardEntry[]> {
     const { data, error } = await requireSupabase().from('leaderboard_view').select('*');
     if (error) throw error;
-    return (data || []).map((entry: any, index: number) => ({
+    const entries = (data || []).map((entry: any) => ({
       ...entry,
       score:
         Number(entry.published_presentations_count || 0) * 50 +
         Number(entry.total_likes_received || 0) * 10 +
-        Number(entry.total_comments_received || 0) * 5,
-      rank: index + 1,
+        Number(entry.total_comments_received || 0) * 5 +
+        Number(entry.solved_coding_challenges_count || 0) * 75,
     })) as LeaderboardEntry[];
+    entries.sort((a, b) => b.score - a.score);
+    return entries.map((entry, index) => ({ ...entry, rank: index + 1 }));
   },
 
   async getNotifications(): Promise<Notification[]> {

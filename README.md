@@ -101,7 +101,7 @@ Le build de production échoue volontairement si l'URL Supabase ou la clé publi
 
 ## Générateur de présentations IA
 
-La page protégée `/presentations/generate` accepte des notes, un PDF (30 Mo et 80 pages par défaut) ou un lien public Google Slides. L'export Slides est demandé uniquement à `docs.google.com` via son URL d'export PDF fixe; les redirections sont refusées. Canva ne fournit pas automatiquement l'accès aux contenus d'un lien de partage : exportez-le en PDF et importez le fichier.
+La page protégée `/presentations/generate` accepte des notes, un PDF (30 Mo et 80 pages par défaut), un lien public Google Slides, ou une présentation déjà créée par l'utilisateur pour en tirer un défi de code. Pour ce dernier mode, l'Edge Function vérifie la propriété de la présentation et la lit directement dans Supabase; elle ne crée pas une seconde présentation. L'export Slides est demandé uniquement à `docs.google.com` via son URL d'export PDF fixe; les redirections sont refusées. Canva ne fournit pas automatiquement l'accès aux contenus d'un lien de partage : exportez-le en PDF et importez le fichier.
 
 La génération s'exécute dans `supabase/functions/generate-presentation` via l'API Groq, avec une clé conservée côté serveur et des réponses JSON validées par la fonction avant utilisation. Les PDF sont extraits page par page en mémoire avec le build serverless de `unpdf`, sans stockage durable ni OCR. Les contenus scannés sans texte extractible sont refusés avec une explication. Les présentations produites utilisent les blocs existants et sont enregistrées en brouillon; elles doivent être relues et publiées explicitement par l'étudiant.
 
@@ -121,6 +121,21 @@ Pour déployer cette fonctionnalité :
 4. Définissez les variables optionnelles côté Edge Function, si nécessaire : `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_GENERATION_TOKENS`, `AI_GENERATION_TIMEOUT_MS` et `APP_ORIGIN`. Les valeurs par défaut sont documentées dans `.env.example`. Les valeurs `VITE_*` ne sont jamais utilisées pour les secrets IA.
 
 La fonction vérifie le JWT Supabase, utilise un quota atomique par utilisateur, borne les tailles et durées, valide la signature PDF, et valide/normalise la sortie avant de l'enregistrer. Pour les erreurs de format, elle peut afficher le message du fournisseur après suppression de la clé et troncature; le contenu du document et le prompt ne sont pas journalisés.
+
+### Défis de programmation
+
+Les cours de programmation et certains cours techniques peuvent générer un défi lié à une section de la présentation. Depuis `/presentations/generate`, choisissez « Défi depuis une présentation » pour sélectionner un de vos cours existants et générer un défi rattaché à celui-ci. Les défis publics et les brouillons d'étudiants sont enregistrés dans Supabase. La solution de référence et les tests cachés sont conservés dans une colonne sans droit de lecture pour les clients; l'éditeur ne les reçoit pas. Le nouvel éditeur Monaco est chargé depuis les dépendances locales et les brouillons de code sont sauvegardés pour l'étudiant connecté.
+
+Les boutons **Exécuter** et **Soumettre** appellent la fonction protégée `execute-code`. Elle envoie le code à un sandbox Judge0 configuré côté serveur, limite les ressources et vérifie les cas publics/cachés. Soumettre n’expose jamais les entrées ni sorties des tests cachés au navigateur. Les langages Java, Python, JavaScript et TypeScript sont pris en charge par Judge0; les défis SQL restent non exécutables par ce runner.
+
+L’exécution utilise Judge0 CE (`https://ce.judge0.com`) sans clé API, avec Java 17 (ID 91). `JUDGE0_URL` est facultative; si elle est définie, elle doit cibler l’origine CE (`https://ce.judge0.com`) ou son chemin `/submissions`. Les clés Judge0 et RapidAPI ne sont pas envoyées par cette fonction.
+
+```bash
+npx supabase db push
+npx supabase functions deploy execute-code
+```
+
+Les IDs par défaut sont Java 17 (91), Python (71), JavaScript (63) et TypeScript (74); `JUDGE0_LANGUAGE_IDS` peut remplacer ces valeurs pour une instance différente. Le quota est de 30 actions par utilisateur et par heure. Le bouton Exécuter transmet l’entrée standard éditable de la console; Soumettre évalue les tests publics et cachés côté serveur.
 
 ---
 

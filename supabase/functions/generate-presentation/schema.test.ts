@@ -25,6 +25,26 @@ function rawResult(firstSection: unknown = section('Concept A'), secondSection: 
     sections: [firstSection, secondSection],
     conclusion: 'Conclusion pédagogique.',
     checklist: ['Relire'],
+    challenge: {
+      available: false,
+      title: '',
+      difficulty: 'none',
+      concepts: [],
+      problem: '',
+      requirements: [],
+      constraints: [],
+      examples: [],
+      language: 'none',
+      runtime: '',
+      starter_code: '',
+      hints: [],
+      evaluation_criteria: [],
+      public_test_cases: [],
+      hidden_test_cases: [],
+      reference_solution: '',
+      solution_explanation: '',
+      linked_section: '',
+    },
   };
 }
 

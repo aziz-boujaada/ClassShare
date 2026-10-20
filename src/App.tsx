@@ -19,6 +19,10 @@ import { LeaderboardPage } from './pages/LeaderboardPage.tsx';
 import { ProfilePage } from './pages/ProfilePage.tsx';
 import { EditProfilePage } from './pages/EditProfilePage.tsx';
 import { NotificationsPage } from './pages/NotificationsPage.tsx';
+import { CodingWorkspacePage } from './pages/CodingWorkspacePage.tsx';
+import { CodingChallengesPage } from './pages/CodingChallengesPage.tsx';
+import { UsersDirectoryPage } from './pages/UsersDirectoryPage.tsx';
+import { CommunityChatWidget } from './components/ui/CommunityChatWidget.tsx';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +72,7 @@ export default function App() {
                 <Route path="/presentations/:slug" element={<PresentationDetailsPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/profile/:username" element={<ProfilePage />} />
+                <Route path="/users" element={<UsersDirectoryPage />} />
 
                 {/* Protected Student Routes */}
                 <Route
@@ -83,6 +88,22 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <AiGenerationPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/challenges"
+                  element={
+                    <ProtectedRoute>
+                      <CodingChallengesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/challenges/:challengeId"
+                  element={
+                    <ProtectedRoute>
+                      <CodingWorkspacePage />
                     </ProtectedRoute>
                   }
                 />
@@ -132,6 +153,7 @@ export default function App() {
               </Routes>
             </div>
             <Footer />
+            <CommunityChatWidget />
           </div>
         </BrowserRouter>
       </AuthProvider>

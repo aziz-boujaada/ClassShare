@@ -3,5 +3,9 @@ project_id = "aciksypdbmscnvrdkvyr"
 [functions.generate-presentation]
 verify_jwt = true
 
+[functions.execute-code]
+# Let CORS OPTIONS reach the function; POST requests still require auth.getUser() in index.ts.
+verify_jwt = false
+
 [db.seed]
 enabled = false

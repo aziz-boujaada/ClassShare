@@ -42,7 +42,7 @@ export const LeaderboardPage: React.FC = () => {
             Les Meilleurs Partages de Connaissances
           </h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Calculé sur les présentations publiées, l'appréciation des pairs (likes) et les discussions pédagogiques.
+            Les défis de code réussis rapportent 75 points, en plus des points gagnés avec vos présentations, likes et commentaires.
           </p>
 
           {/* Timeframe Filter Pills */}

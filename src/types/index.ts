@@ -40,6 +40,57 @@ export interface CodeSnippetContent {
   explanation?: string;
 }
 
+export interface CodingChallengeCase {
+  input: string;
+  expected_output: string;
+}
+
+export interface CodingChallengeParticipant {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
+export interface CommunityMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export interface CommunityConversation {
+  profile: Pick<Profile, 'id' | 'username' | 'full_name' | 'avatar_url'>;
+  last_message: string;
+  last_message_at: string;
+  unread_count: number;
+}
+
+export interface CodingChallenge {
+  id: string;
+  author_id: string;
+  presentation_id: string | null;
+  presentation_slug?: string | null;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  concepts: string[];
+  problem: string;
+  requirements: string[];
+  constraints: string[];
+  examples: CodingChallengeCase[];
+  language: 'java' | 'python' | 'typescript' | 'javascript' | 'sql';
+  runtime: string;
+  starter_code: string;
+  hints: string[];
+  evaluation_criteria: string[];
+  public_test_cases: CodingChallengeCase[];
+  linked_section: string;
+  created_at: string;
+  participants?: CodingChallengeParticipant[];
+}
+
 export interface ResourceItem {
   title: string;
   url: string;
@@ -142,6 +193,7 @@ export interface LeaderboardEntry {
   published_presentations_count: number;
   total_likes_received: number;
   total_comments_received: number;
+  solved_coding_challenges_count?: number;
   score: number;
   rank?: number;
 }

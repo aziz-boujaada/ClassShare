@@ -42,6 +42,7 @@ export function calculateLeaderboardRanking(
     published_presentations_count: number;
     total_likes_received: number;
     total_comments_received: number;
+    solved_coding_challenges_count?: number;
     first_published_at?: string;
   }>
 ): LeaderboardEntry[] {
@@ -49,7 +50,8 @@ export function calculateLeaderboardRanking(
     const score =
       entry.published_presentations_count * 50 +
       entry.total_likes_received * 10 +
-      entry.total_comments_received * 5;
+      entry.total_comments_received * 5 +
+      (entry.solved_coding_challenges_count || 0) * 75;
 
     return {
       ...entry,

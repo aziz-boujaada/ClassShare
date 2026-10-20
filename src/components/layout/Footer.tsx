@@ -39,6 +39,11 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/users" className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                  Membres de la plateforme
+                </Link>
+              </li>
+              <li>
                 <Link to="/dashboard" className="hover:text-indigo-600 dark:hover:text-indigo-400">
                   Espace personnel
                 </Link>

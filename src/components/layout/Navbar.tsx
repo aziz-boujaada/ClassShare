@@ -13,6 +13,8 @@ import {
   Trophy,
   Compass,
   LayoutDashboard,
+  Code2,
+  UsersRound,
   Check,
   Moon,
   Sun,
@@ -88,16 +90,20 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { label: 'Découvrir', path: '/presentations', icon: Compass },
+    { label: 'Membres', path: '/users', icon: UsersRound },
     { label: 'Classement', path: '/leaderboard', icon: Trophy },
-    ...(user ? [{ label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard }] : []),
+    ...(user ? [
+      { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+      { label: 'Défis de code', path: '/challenges', icon: Code2 },
+    ] : []),
   ];
 
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 transition-colors">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-[72px] w-full max-w-[1720px] items-center justify-between px-4 sm:px-6 lg:px-10 2xl:px-12">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 xl:gap-9">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
                 <GraduationCap className="h-6 w-6" />
@@ -113,7 +119,7 @@ export const Navbar: React.FC = () => {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1.5 xl:gap-2">
               {navLinks.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -121,7 +127,7 @@ export const Navbar: React.FC = () => {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors xl:px-3.5 ${
                       isActive
                         ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
@@ -136,19 +142,19 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Search bar (desktop) */}
-          <form onSubmit={handleSearchSubmit} className="hidden lg:flex items-center relative max-w-xs w-full">
+          <form onSubmit={handleSearchSubmit} className="hidden lg:flex min-w-0 w-full max-w-lg flex-1 items-center relative mx-6 xl:mx-10">
             <Search className="absolute left-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="Rechercher une présentation, sujet, tag..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-1.5 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 dark:focus:bg-slate-900"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 dark:focus:bg-slate-900"
             />
           </form>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2.5 xl:gap-3">
             {/* Dark mode toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
