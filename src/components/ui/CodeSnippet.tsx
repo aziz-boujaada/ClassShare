@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Check, Copy, Terminal } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-java';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-bash';
@@ -23,9 +24,10 @@ export const CodeSnippet: React.FC<CodeSnippetProps> = ({
   explanation,
 }) => {
   const [copied, setCopied] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    Prism.highlightAll();
+    if (codeRef.current) Prism.highlightElement(codeRef.current);
   }, [code, language]);
 
   const handleCopy = async () => {
@@ -75,7 +77,7 @@ export const CodeSnippet: React.FC<CodeSnippetProps> = ({
       {/* Code Area */}
       <div className="p-4 overflow-x-auto text-sm font-mono leading-relaxed bg-slate-900 text-slate-100">
         <pre className="!m-0 !p-0 !bg-transparent">
-          <code className={`language-${normalizedLang}`}>{code.trim()}</code>
+          <code ref={codeRef} className={`language-${normalizedLang}`}>{code.trim()}</code>
         </pre>
       </div>
 

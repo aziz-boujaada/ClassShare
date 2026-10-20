@@ -761,6 +761,7 @@ export const PresentationEditorPage: React.FC = () => {
                             >
                               <option value="typescript">TypeScript</option>
                               <option value="javascript">JavaScript</option>
+                              <option value="java">Java</option>
                               <option value="python">Python</option>
                               <option value="sql">SQL (PostgreSQL)</option>
                               <option value="bash">Bash / Shell</option>
