@@ -84,7 +84,9 @@ Le schéma complet et les politiques de sécurité RLS se trouvent dans :
    npx supabase db push
    ```
 4. Définissez `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` dans les variables de votre hébergeur, puis reconstruisez/redéployez le frontend. L'ancienne variable `VITE_SUPABASE_ANON_KEY` reste acceptée pour les projets existants.
-5. Dans Supabase Auth, configurez les URL de redirection autorisées pour votre domaine de production et la confirmation d'e-mail.
+5. Dans Supabase Auth, configurez les URL de redirection autorisées pour votre domaine de production.
+
+Par défaut, désactivez **Confirm email** dans **Supabase → Authentication → Providers → Email** pour éviter que le quota d'e-mails de confirmation bloque les inscriptions. Ce réglage est aussi présent dans `supabase/config.toml` pour le développement local. Les nouvelles adresses seront considérées comme confirmées dès l'inscription. La connexion par adresse e-mail et mot de passe n'envoie pas d'e-mail. Si la confirmation des adresses est requise, configurez un SMTP personnalisé au lieu du service e-mail intégré limité de Supabase.
 
 La migration n'insère aucune donnée de démonstration. `supabase/seed.sql` n'est pas exécuté. Si le schéma a déjà été créé manuellement dans le SQL Editor, vérifiez l'historique des migrations avant `db push`; au besoin, réconciliez-le avec `npx supabase migration repair`.
 
@@ -101,24 +103,28 @@ Le build de production échoue volontairement si l'URL Supabase ou la clé publi
 
 ## Générateur de présentations IA
 
-La page protégée `/presentations/generate` accepte des notes, un PDF (30 Mo et 80 pages par défaut), un lien public Google Slides, ou une présentation déjà créée par l'utilisateur pour en tirer un défi de code. Pour ce dernier mode, l'Edge Function vérifie la propriété de la présentation et la lit directement dans Supabase; elle ne crée pas une seconde présentation. L'export Slides est demandé uniquement à `docs.google.com` via son URL d'export PDF fixe; les redirections sont refusées. Canva ne fournit pas automatiquement l'accès aux contenus d'un lien de partage : exportez-le en PDF et importez le fichier.
+La page protégée `/presentations/generate` accepte des notes, un PDF (30 Mo et 20 pages maximum), un lien public Google Slides, ou une présentation déjà créée par l'utilisateur pour en tirer un défi de code. Pour ce dernier mode, l'Edge Function vérifie la propriété de la présentation et la lit directement dans Supabase; elle ne crée pas une seconde présentation. L'export Slides est demandé uniquement à `docs.google.com` via son URL d'export PDF fixe; les redirections sont refusées. Canva ne fournit pas automatiquement l'accès aux contenus d'un lien de partage : exportez-le en PDF et importez le fichier.
 
-La génération s'exécute dans `supabase/functions/generate-presentation` via l'API Groq, avec une clé conservée côté serveur et des réponses JSON validées par la fonction avant utilisation. Les PDF sont extraits page par page en mémoire avec le build serverless de `unpdf`, sans stockage durable ni OCR. Les contenus scannés sans texte extractible sont refusés avec une explication. Les présentations produites utilisent les blocs existants et sont enregistrées en brouillon; elles doivent être relues et publiées explicitement par l'étudiant.
+La génération s'exécute dans `supabase/functions/generate-presentation` via l'API Groq, avec la clé conservée côté serveur. Le modèle par défaut est `qwen/qwen3.8-27b` (configurable avec `GROQ_MODEL`); il accepte des entrées texte/image et strict JSON Schema, mais l'API ne prend pas un PDF brut en entrée. Le backend extrait donc le texte page par page avec `unpdf`, conserve les sauts de ligne et numéros de page, puis envoie le texte au modèle. Les PDF sont limités à 30 Mo, 20 pages et 100 000 caractères extraits. Les PDF chiffrés, corrompus et les documents sans texte extractible sont signalés. Les pages sans texte dans un PDF mixte sont marquées comme non lues; le modèle reçoit l'instruction de ne pas en inventer le contenu. Aucun OCR de page scannée n'est activé. Les présentations produites utilisent les blocs existants et sont enregistrées en brouillon; elles doivent être relues et publiées explicitement par l'étudiant.
+
+Les résultats PDF sont mis en cache par empreinte SHA-256, modèle et options de génération, dans une table RLS privée au propriétaire, avec expiration après 7 jours. Les résultats en cache évitent les appels IA et ne consomment pas le quota de génération; le cache ne stocke pas les PDF. Les migrations de cache et de limitation des tâches doivent être appliquées avec `npx supabase db push`. Par défaut, une seule génération par utilisateur peut tourner à la fois; les tâches abandonnées expirent après 5 minutes. Le cache ne change pas les quotas Groq du compte et ne garantit pas un accès gratuit ou illimité.
+
+Les modes notes, PDF et lien produisent uniquement une présentation. Le mode **Créer un défi de code** produit uniquement un défi lié à la présentation choisie. Le type de résultat est envoyé explicitement à l'Edge Function et vérifié avant traitement.
 
 Pour déployer cette fonctionnalité :
 
-1. Appliquez les migrations avec `npx supabase db push` (la migration de quota limite un utilisateur à 10 demandes par 24 heures).
+1. Appliquez les migrations avec `npx supabase db push` (quota de 10 demandes par 24 heures, cache privé et verrou de concurrence par utilisateur).
 2. Définissez les secrets Edge Function :
    ```bash
    npx supabase secrets set GROQ_API_KEY='votre-cle-groq'
-   npx supabase secrets set GROQ_MODEL='openai/gpt-oss-20b'
+   npx supabase secrets set GROQ_MODEL='qwen/qwen3.8-27b'
    npx supabase secrets set MAX_PDF_SIZE_MB=30
    ```
 3. Déployez la fonction :
    ```bash
    npx supabase functions deploy generate-presentation
    ```
-4. Définissez les variables optionnelles côté Edge Function, si nécessaire : `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES`, `MAX_GENERATION_TOKENS`, `AI_GENERATION_TIMEOUT_MS` et `APP_ORIGIN`. Les valeurs par défaut sont documentées dans `.env.example`. Les valeurs `VITE_*` ne sont jamais utilisées pour les secrets IA.
+4. Définissez les variables optionnelles côté Edge Function, si nécessaire : `GROQ_MODEL`, `MAX_PDF_SIZE_MB`, `MAX_PDF_PAGES` (plafonné à 20), `MAX_SOURCE_CHARS`, `MAX_GENERATION_TOKENS`, `AI_GENERATION_TIMEOUT_MS`, `MAX_CONCURRENT_GENERATIONS_PER_USER` (plafonné à 3) et `APP_ORIGIN`. Les valeurs par défaut sont documentées dans `.env.example`. Les valeurs `VITE_*` ne sont jamais utilisées pour les secrets IA.
 
 La fonction vérifie le JWT Supabase, utilise un quota atomique par utilisateur, borne les tailles et durées, valide la signature PDF, et valide/normalise la sortie avant de l'enregistrer. Pour les erreurs de format, elle peut afficher le message du fournisseur après suppression de la clé et troncature; le contenu du document et le prompt ne sont pas journalisés.
 

@@ -113,8 +113,9 @@ export function parseGroqResponse(payload: unknown): unknown {
   const choice = requireRecord(choices[0], 'choices[0]');
   const message = requireRecord(choice.message, 'choices[0].message');
   if (typeof message.content !== 'string' || !message.content.trim()) throw new Error('La réponse Groq ne contient pas de contenu JSON.');
+  const content = message.content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   try {
-    return JSON.parse(message.content);
+    return JSON.parse(content);
   } catch {
     throw new Error('La réponse Groq ne contient pas un JSON valide.');
   }

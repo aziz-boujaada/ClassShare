@@ -9,3 +9,7 @@ verify_jwt = false
 
 [db.seed]
 enabled = false
+
+[auth.email]
+# Avoid signup confirmation emails consuming Supabase's shared email quota.
+enable_confirmations = false

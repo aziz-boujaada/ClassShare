@@ -83,6 +83,7 @@ export const AiGenerationPage: React.FC = () => {
 
       const body = new FormData();
       body.set('mode', mode === 'existing' ? 'challenge' : mode);
+      body.set('outputType', mode === 'existing' ? 'challenge' : 'presentation');
       body.set('subject', subject);
       body.set('audience', audience);
       body.set('language', language);
@@ -132,6 +133,10 @@ export const AiGenerationPage: React.FC = () => {
         navigate(`/challenges/${generated.challenge_id}`, { replace: true });
         return;
       }
+      if (generated.challenge_id) throw new Error('Le service a retourné un défi au lieu de respecter votre choix de présentation. Réessayez.');
+      if (!generated.title?.trim() || !Array.isArray(generated.blocks) || generated.blocks.length === 0) {
+        throw new Error('Le service n’a pas retourné une présentation complète. Réessayez.');
+      }
       const saved = await api.createPresentation({
         title: generated.title,
         description: generated.description,
@@ -142,8 +147,8 @@ export const AiGenerationPage: React.FC = () => {
         cover_image_url: null,
         status: 'draft',
         author_id: '',
-      }, generated.blocks, generated.challenge_id || undefined);
-      navigate(generated.challenge_id ? `/challenges/${generated.challenge_id}` : `/presentations/${saved.id}/edit`, { replace: true });
+      }, generated.blocks);
+      navigate(`/presentations/${saved.id}/edit`, { replace: true });
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Une erreur est survenue pendant la génération.';
       setError(message.includes('Failed to fetch')
@@ -186,11 +191,12 @@ export const AiGenerationPage: React.FC = () => {
                 <button type="button" className={modeClass(mode === 'url')} onClick={() => setMode('url')}><Link2 className="h-4 w-4" /> Importer depuis un lien</button>
                 <button type="button" className={modeClass(mode === 'pdf')} onClick={() => setMode('pdf')}><UploadCloud className="h-4 w-4" /> Importer un PDF</button>
                 <button type="button" className={modeClass(mode === 'notes')} onClick={() => setMode('notes')}><FileText className="h-4 w-4" /> Coller mes notes</button>
-                <button type="button" className={modeClass(mode === 'existing')} onClick={() => setMode('existing')}><Code2 className="h-4 w-4" /> Défi depuis une présentation</button>
+                <button type="button" className={modeClass(mode === 'existing')} onClick={() => setMode('existing')}><Code2 className="h-4 w-4" /> Créer un défi de code</button>
               </div>
+              <p className="mt-3 text-xs text-slate-500">Le choix du contenu détermine le résultat : les notes, liens et PDF créent une présentation; le mode défi crée uniquement un défi à partir de la présentation sélectionnée.</p>
               <div className="mt-5">
                 {mode === 'url' && <div><label htmlFor="source-url" className="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300">Lien public Google Slides ou Canva</label><input id="source-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://docs.google.com/presentation/d/..." className={inputClass} type="url" /><p className="mt-2 text-xs leading-5 text-slate-500">Les présentations Google Slides publiques accessibles via leur export PDF sont prises en charge. Les liens Canva nécessitant une autorisation ne peuvent pas être lus ici : exportez-les en PDF puis importez le fichier.</p></div>}
-                {mode === 'pdf' && <div><label htmlFor="source-pdf" className="sr-only">Sélectionner un fichier PDF</label><input ref={fileInput} id="source-pdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] || null)} /><button type="button" onClick={() => fileInput.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const dropped = e.dataTransfer.files[0]; if (dropped) setFile(dropped); }} className="flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 text-center hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950"><UploadCloud className="mb-2 h-8 w-8 text-indigo-500" /><span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Déposez un PDF ici ou parcourez vos fichiers</span><span className="mt-1 text-xs text-slate-500">PDF uniquement, 30 Mo maximum</span></button>{file && <div className="mt-3 flex items-center justify-between rounded-xl bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200"><span className="truncate">{file.name} · {(file.size / (1024 * 1024)).toFixed(1)} Mo</span><button type="button" aria-label="Retirer le PDF" onClick={() => { setFile(null); if (fileInput.current) fileInput.current.value = ''; }}><X className="h-4 w-4" /></button></div>}</div>}
+                {mode === 'pdf' && <div><label htmlFor="source-pdf" className="sr-only">Sélectionner un fichier PDF</label><input ref={fileInput} id="source-pdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] || null)} /><button type="button" onClick={() => fileInput.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const dropped = e.dataTransfer.files[0]; if (dropped) setFile(dropped); }} className="flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 text-center hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-950"><UploadCloud className="mb-2 h-8 w-8 text-indigo-500" /><span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Déposez un PDF ici ou parcourez vos fichiers</span><span className="mt-1 text-xs text-slate-500">PDF, 30 Mo maximum et 20 pages maximum</span></button>{file && <div className="mt-3 flex items-center justify-between rounded-xl bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200"><span className="truncate">{file.name} · {(file.size / (1024 * 1024)).toFixed(1)} Mo</span><button type="button" aria-label="Retirer le PDF" onClick={() => { setFile(null); if (fileInput.current) fileInput.current.value = ''; }}><X className="h-4 w-4" /></button></div>}</div>}
                 {mode === 'notes' && <div><label htmlFor="source-notes" className="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300">Notes, cours ou explications</label><textarea id="source-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={10} maxLength={60000} placeholder="Collez votre contenu ici. L'IA organisera les idées sans ajouter de faits non étayés…" className={inputClass + ' resize-y'} /><p className="mt-1 text-right text-xs text-slate-400">{notes.length.toLocaleString('fr-FR')} / 60 000</p></div>}
                 {mode === 'existing' && <div><label htmlFor="existing-presentation" className="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300">Présentation source</label><select id="existing-presentation" value={selectedPresentationId} onChange={(e) => setSelectedPresentationId(e.target.value)} disabled={presentationsLoading || presentations.length === 0} className={inputClass}><option value="">{presentationsLoading ? 'Chargement…' : presentations.length ? 'Choisissez une présentation' : 'Aucune présentation disponible'}</option>{presentations.map((presentation) => <option key={presentation.id} value={presentation.id}>{presentation.title} · {presentation.subject} · @{presentation.author?.username || 'étudiant'} · {presentation.status === 'draft' ? 'Brouillon' : 'Publiée'}</option>)}</select>{presentationLoadError && <p role="alert" className="mt-2 text-xs text-rose-600">{presentationLoadError}</p>}<p className="mt-2 text-xs text-slate-500">Les présentations publiées de la communauté et vos brouillons sont disponibles. Le défi sera lié à la présentation sélectionnée.</p></div>}
               </div>

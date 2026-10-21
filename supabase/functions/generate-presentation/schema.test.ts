@@ -81,6 +81,13 @@ test('accepte une réponse fournisseur conforme au schéma', () => {
   assert.equal(result.title, 'Présentation test');
 });
 
+test('parse un JSON entouré de balises Markdown sans altérer le contrat', () => {
+  const payload = {
+    choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(rawResult())}\n\`\`\`` } }],
+  };
+  assert.equal(validateResult(parseGroqResponse(payload), 6, new Set([1])).title, 'Présentation test');
+});
+
 test('rejette explicitement une réponse invalide du fournisseur', () => {
   assert.throws(
     () => parseGroqResponse({ choices: [{ message: { content: '{bad json' } }] }),
