@@ -81,7 +81,7 @@ async function readPdf(file: File): Promise<Source> {
     throw new Error('Ce PDF est illisible ou chiffré. Essayez un PDF non protégé.');
   }
   try {
-    if (doc.numPages > MAX_PDF_PAGES) throw new Error(`Le PDF contient ${doc.numPages} pages. La limite est de ${MAX_PDF_PAGES} pages.`);
+    if (doc.numPages > 50) throw new Error(`Le PDF contient ${doc.numPages} pages. La limite est de ${MAX_PDF_PAGES} pages.`);
     const pages: number[] = [];
     const chunks: string[] = [];
     let total = 0;
