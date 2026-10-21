@@ -68,6 +68,21 @@ export interface CommunityConversation {
   unread_count: number;
 }
 
+export interface GlobalCommunity {
+  id: boolean;
+  name: string;
+  image_url: string | null;
+  updated_at: string;
+}
+
+export interface GlobalCommunityMessage {
+  id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  author: Pick<Profile, 'id' | 'username' | 'full_name' | 'avatar_url'>;
+}
+
 export interface CodingChallenge {
   id: string;
   author_id: string;

@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Code2,
   UsersRound,
+  MessageCircle,
   Check,
   Moon,
   Sun,
@@ -94,6 +95,7 @@ export const Navbar: React.FC = () => {
     { label: 'Classement', path: '/leaderboard', icon: Trophy },
     ...(user ? [
       { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+      { label: 'Chat global', path: '/community', icon: MessageCircle },
       { label: 'Défis de code', path: '/challenges', icon: Code2 },
     ] : []),
   ];

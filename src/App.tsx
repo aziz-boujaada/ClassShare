@@ -23,6 +23,7 @@ import { CodingWorkspacePage } from './pages/CodingWorkspacePage.tsx';
 import { CodingChallengesPage } from './pages/CodingChallengesPage.tsx';
 import { UsersDirectoryPage } from './pages/UsersDirectoryPage.tsx';
 import { CommunityChatWidget } from './components/ui/CommunityChatWidget.tsx';
+import { GlobalCommunityPage } from './pages/GlobalCommunityPage.tsx';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +81,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/community"
+                  element={
+                    <ProtectedRoute>
+                      <GlobalCommunityPage />
                     </ProtectedRoute>
                   }
                 />

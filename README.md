@@ -64,6 +64,7 @@ Le schéma complet et les politiques de sécurité RLS se trouvent dans :
 6. **`notifications`** : Alertes pour likes et commentaires reçus.
 7. **`leaderboard_view`** : Vue SQL sécurisée calculant les classements avec départage strict :
    `Nombre d'exposés publiés DESC -> Likes reçus DESC -> Commentaires reçus DESC`.
+8. **`global_community`** et **`global_community_messages`** : salon global en direct réservé aux membres connectés. Tous les membres peuvent y écrire et modifier le nom ou l'image du salon.
 
 ### Sécurité & Row Level Security (RLS) :
 - Les brouillons (`status = 'draft'`) ne sont consultables et modifiables **que par leur auteur**.

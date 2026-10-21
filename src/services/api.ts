@@ -10,6 +10,8 @@ import type {
   CodingChallenge,
   CommunityConversation,
   CommunityMessage,
+  GlobalCommunity,
+  GlobalCommunityMessage,
   FilterOptions,
 } from '../types/index.ts';
 
@@ -356,6 +358,64 @@ export const api = {
       .is('read_at', null);
     if (error) throw error;
     return count || 0;
+  },
+
+  async getGlobalCommunity(): Promise<GlobalCommunity> {
+    const { data, error } = await requireSupabase()
+      .from('global_community')
+      .select('id,name,image_url,updated_at')
+      .eq('id', true)
+      .single();
+    if (error) throw error;
+    return data as GlobalCommunity;
+  },
+
+  async updateGlobalCommunity(input: { name: string; image_url: string | null }): Promise<GlobalCommunity> {
+    const name = input.name.trim();
+    if (!name || name.length > 60) throw new Error('Le nom doit contenir entre 1 et 60 caractères.');
+    const { data, error } = await requireSupabase()
+      .from('global_community')
+      .update({ name, image_url: input.image_url, updated_at: new Date().toISOString() })
+      .eq('id', true)
+      .select('id,name,image_url,updated_at')
+      .single();
+    if (error) throw error;
+    return data as GlobalCommunity;
+  },
+
+  async uploadGlobalCommunityImage(file: File): Promise<string> {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) throw new Error('Choisissez une image JPG, PNG ou WebP.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('L’image doit faire 5 Mo maximum.');
+    const userId = await currentUserId();
+    const extensionByType: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+    const path = `${userId}/${crypto.randomUUID()}.${extensionByType[file.type]}`;
+    const client = requireSupabase();
+    const { error } = await client.storage.from('community-images').upload(path, file, {
+      cacheControl: '3600', contentType: file.type, upsert: false,
+    });
+    if (error) throw error;
+    return client.storage.from('community-images').getPublicUrl(path).data.publicUrl;
+  },
+
+  async getGlobalCommunityMessages(): Promise<GlobalCommunityMessage[]> {
+    const { data, error } = await requireSupabase()
+      .from('global_community_messages')
+      .select('id,sender_id,content,created_at,author:profiles!global_community_messages_sender_id_fkey(id,username,full_name,avatar_url)')
+      .order('created_at', { ascending: true })
+      .limit(200);
+    if (error) throw error;
+    return (data || []) as unknown as GlobalCommunityMessage[];
+  },
+
+  async sendGlobalCommunityMessage(content: string): Promise<void> {
+    const message = content.trim();
+    if (!message || message.length > 2_000) throw new Error('Le message doit contenir entre 1 et 2 000 caractères.');
+    const senderId = await currentUserId();
+    const { error } = await requireSupabase()
+      .from('global_community_messages')
+      .insert({ sender_id: senderId, content: message });
+    if (error) throw error;
   },
 
   async getCodingDraft(challengeId: string): Promise<string | null> {
