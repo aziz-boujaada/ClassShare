@@ -11,7 +11,7 @@ const corsHeaders = {
   'Vary': 'Origin',
 };
 const MAX_PDF_BYTES = Math.max(1, Number(Deno.env.get('MAX_PDF_SIZE_MB') || '30')) * 1024 * 1024;
-const MAX_PDF_PAGES = effectiveMaxPdfPages(Number(Deno.env.get('MAX_PDF_PAGES') || '20'));
+const MAX_PDF_PAGES = effectiveMaxPdfPages(Number(Deno.env.get('MAX_PDF_PAGES') || '50'));
 const configuredSourceChars = Number(Deno.env.get('MAX_SOURCE_CHARS') || '100000');
 const MAX_SOURCE_CHARS = Number.isFinite(configuredSourceChars) ? Math.max(10_000, Math.min(100_000, configuredSourceChars)) : 100_000;
 const MAX_OUTPUT_TOKENS = Math.min(8192, Math.max(1024, Number(Deno.env.get('MAX_GENERATION_TOKENS') || '6000')));
