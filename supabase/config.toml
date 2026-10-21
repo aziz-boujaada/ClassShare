@@ -11,5 +11,5 @@ verify_jwt = false
 enabled = false
 
 [auth.email]
-# Avoid signup confirmation emails consuming Supabase's shared email quota.
-enable_confirmations = false
+# Require new users to confirm their email before signing in.
+enable_confirmations = true

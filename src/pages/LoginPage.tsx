@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { GraduationCap, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -12,10 +12,26 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('emailVerified') !== '1') return;
+
+    const callback = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const redirectError = params.get('error_description') || callback.get('error_description');
+    if (redirectError || params.has('error') || callback.has('error')) {
+      setError('Le lien de vérification est invalide ou expiré. Demandez un nouvel e-mail de confirmation.');
+    } else {
+      setVerificationNotice('Adresse e-mail vérifiée avec succès. Vous pouvez maintenant vous connecter.');
+    }
+    navigate('/login', { replace: true, state: location.state });
+  }, [location.hash, location.search, location.state, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setVerificationNotice(null);
     setLoading(true);
 
     try {
@@ -55,6 +71,11 @@ export const LoginPage: React.FC = () => {
           {error && (
             <div className="rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-200 border border-rose-200 dark:border-rose-900">
               {error}
+            </div>
+          )}
+          {verificationNotice && (
+            <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+              {verificationNotice}
             </div>
           )}
 

@@ -19,7 +19,7 @@ export function hasPdfSignature(bytes: Uint8Array): boolean {
 }
 
 export function effectiveMaxPdfPages(configured: number): number {
-  return Number.isFinite(configured) ? Math.min(20, Math.max(1, Math.floor(configured))) : 20;
+  return Number.isFinite(configured) ? Math.min(80, Math.max(1, Math.floor(configured))) : 50;
 }
 
 export function estimateTokens(text: string): number {

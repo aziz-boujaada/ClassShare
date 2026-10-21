@@ -85,7 +85,10 @@ export const api = {
     const { data: authData, error } = await client.auth.signUp({
       email: data.email,
       password: data.password,
-      options: { data: { full_name: data.full_name, study_program: data.study_program } },
+      options: {
+        data: { full_name: data.full_name, study_program: data.study_program },
+        emailRedirectTo: `${window.location.origin}/login?emailVerified=1`,
+      },
     });
     if (error) throw error;
     if (!authData.user) throw new Error('La création du compte a échoué.');

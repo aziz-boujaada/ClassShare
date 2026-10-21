@@ -21,10 +21,11 @@ test('checks PDF signature and rejects a corrupt header', () => {
   assert.equal(hasPdfSignature(new TextEncoder().encode('not a pdf')), false);
 });
 
-test('caps configured page limits at twenty and uses twenty for invalid config', () => {
-  assert.equal(effectiveMaxPdfPages(80), 20);
+test('caps configured page limits at eighty and uses fifty for invalid config', () => {
+  assert.equal(effectiveMaxPdfPages(100), 80);
+  assert.equal(effectiveMaxPdfPages(80), 80);
   assert.equal(effectiveMaxPdfPages(12.8), 12);
-  assert.equal(effectiveMaxPdfPages(Number.NaN), 20);
+  assert.equal(effectiveMaxPdfPages(Number.NaN), 50);
 });
 
 test('estimates a conservative token budget for extracted text', () => {

@@ -14,10 +14,12 @@ export const RegisterPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
 
     if (password !== confirmPassword) {
       setError('Les mots de passe ne correspondent pas.');
@@ -38,7 +40,9 @@ export const RegisterPage: React.FC = () => {
       });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || "Erreur lors de l'inscription");
+      const message = err.message || "Erreur lors de l'inscription";
+      if (message.startsWith('Compte créé.')) setNotice(message);
+      else setError(message);
     } finally {
       setLoading(false);
     }
@@ -68,6 +72,11 @@ export const RegisterPage: React.FC = () => {
           {error && (
             <div className="rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-200 border border-rose-200">
               {error}
+            </div>
+          )}
+          {notice && (
+            <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+              {notice}
             </div>
           )}
 
